@@ -1,5 +1,6 @@
 import { Component, OnDestroy } from '@angular/core';
-import { Subscription, tap } from 'rxjs';
+import { FormControl } from '@angular/forms';
+import { map, Subscription, switchMap, tap } from 'rxjs';
 import { Item, Livro } from 'src/app/models/interfaces';
 import { LivroVolumeInfo } from 'src/app/models/livroVolumeInfo';
 import { LivroService } from 'src/app/service/livro.service';
@@ -9,30 +10,18 @@ import { LivroService } from 'src/app/service/livro.service';
   templateUrl: './lista-livros.component.html',
   styleUrls: ['./lista-livros.component.css'],
 })
-export class ListaLivrosComponent implements OnDestroy {
-  listaLivros: Livro[];
-  campoBusca: string = '';
-  subscription: Subscription;
-  livro: Livro;
+export class ListaLivrosComponent {
+  campoBusca = new FormControl();
   constructor(private service: LivroService) {}
 
-  buscarLivros() {
-    this.subscription = this.service.buscar(this.campoBusca).subscribe({
-      next: (items) => {
-        console.log(items);
-        this.listaLivros = this.livrosResultadoParaLivros(items);
-      },
-      error: (erro) => console.error(erro),
-    });
-  }
+  livrosEncontrados$ = this.campoBusca.valueChanges.pipe(
+    switchMap((valorDigitado) => this.service.buscar(valorDigitado)),
+    map((items) => this.livrosResultadoParaLivros(items))
+  );
 
   livrosResultadoParaLivros(items: Item[]): LivroVolumeInfo[] {
     return items.map((item) => {
       return new LivroVolumeInfo(item);
     });
-  }
-
-  ngOnDestroy(): void {
-    this.subscription.unsubscribe();
   }
 }
